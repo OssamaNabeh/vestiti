@@ -1,0 +1,229 @@
+﻿@page
+@using System.Globalization
+@using StyleSphere.Data
+@model StyleSphere.Pages.ProductsModel
+@{
+    ViewData["Title"] = "Shop";
+    Layout = "_CustomerLayout";
+    var maxPriceStr = Model.MaxPrice.ToString("0", CultureInfo.InvariantCulture);
+}
+
+<div class="container">
+    <div class="page-head">
+        <div class="crumbs"><a href="/">Home</a><span class="sep">/</span><span id="crumb-current">Shop</span></div>
+        <h1 id="shop-title">All products</h1>
+        <p id="shop-sub">Considered pieces for every day — filter by category, price, rating, or brand.</p>
+    </div>
+
+    <div class="filters-scrim" id="filters-scrim"></div>
+
+    <div class="shop-layout">
+        <aside class="filters" id="filters" aria-label="Filters">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <b style="font-size:12px;letter-spacing:.14em;text-transform:uppercase">Filters</b>
+                <button type="button" class="chip" id="clear-filters" style="padding:5px 12px">Clear all</button>
+            </div>
+
+            <div class="filter-group">
+                <h4>Category</h4>
+                @foreach (var c in Model.Categories)
+                {
+                    <label class="check"><input type="checkbox" name="category" value="@c" /> @c <span class="count">@Model.Products.Count(p => p.Category == c)</span></label>
+                }
+            </div>
+
+            <div class="filter-group">
+                <h4>Price</h4>
+                <input type="range" id="price-range" min="0" max="@maxPriceStr" step="10" value="@maxPriceStr" aria-label="Maximum price" />
+                <div class="range-val"><span>$0</span><span>Up to <b id="price-val">$@maxPriceStr</b></span></div>
+            </div>
+
+            <div class="filter-group">
+                <h4>Brand</h4>
+                @foreach (var b in Model.Brands)
+                {
+                    <label class="check"><input type="checkbox" name="brand" value="@b" /> @b <span class="count">@Model.Products.Count(p => p.Brand == b)</span></label>
+                }
+            </div>
+
+            <div class="filter-group">
+                <h4>Rating</h4>
+                <label class="check"><input type="checkbox" name="rating" value="4.5" /> <span class="stars">★★★★★</span> 4.5 &amp; up</label>
+                <label class="check"><input type="checkbox" name="rating" value="4" /> <span class="stars">★★★★☆</span> 4.0 &amp; up</label>
+            </div>
+
+            <div class="filter-group">
+                <h4>Availability</h4>
+                <label class="check"><input type="checkbox" id="f-instock" /> In stock only</label>
+                <label class="check"><input type="checkbox" id="f-sale" /> On sale</label>
+            </div>
+            <button type="button" class="btn btn-block filter-toggle" id="filters-apply" style="margin-top:24px">Show results</button>
+        </aside>
+
+        <section aria-live="polite">
+            <div class="shop-toolbar">
+                <div style="display:flex;gap:14px;align-items:center">
+                    <button type="button" class="btn btn-outline btn-sm filter-toggle" id="filters-open"><i class="fa-solid fa-sliders"></i> Filters</button>
+                    <span class="count" id="result-count">@Model.Products.Count products</span>
+                </div>
+                <label class="sort">Sort by
+                    <select id="sort">
+                        <option value="featured">Featured</option>
+                        <option value="newest">Newest</option>
+                        <option value="price-asc">Price: low to high</option>
+                        <option value="price-desc">Price: high to low</option>
+                        <option value="rating">Top rated</option>
+                        <option value="discount">Biggest discount</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="active-filters" id="active-filters"></div>
+
+            <div class="product-grid cols-3" id="grid">
+                @foreach (var p in Model.Products)
+                {
+                    <partial name="_ProductCard" model="p" />
+                }
+            </div>
+
+            <div class="empty" id="empty" hidden>
+                <i class="fa-regular fa-face-meh"></i>
+                <h2>No pieces match</h2>
+                <p id="empty-msg">Try loosening your filters or searching for something else.</p>
+                <button type="button" class="btn" id="empty-clear">Clear filters</button>
+            </div>
+
+            <div class="load-more" id="load-more" hidden>
+                <div class="progress"><i id="progress-bar" style="width:0"></i></div>
+                <small id="progress-text"></small>
+                <button type="button" class="btn btn-outline" id="load-more-btn">Load more</button>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const PAGE = 9;
+            const $ = (s, r = document) => r.querySelector(s);
+            const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+            const grid = $('#grid'), cards = $$('.pcard', grid);
+            const maxPrice = Number($('#price-range').max);
+            const params = new URLSearchParams(location.search);
+            let visible = PAGE;
+
+            const state = { q: (params.get('q') || '').toLowerCase(), wishlist: params.get('wishlist') === '1' };
+            const cat = params.get('category');
+            if (cat) $$('input[name=category]').forEach(i => i.checked = i.value === cat);
+            if (params.get('sale') === '1') $('#f-sale').checked = true;
+            if (params.get('sort') && $('#sort option[value="' + params.get('sort') + '"]')) $('#sort').value = params.get('sort');
+
+            const checked = n => $$('input[name=' + n + ']:checked').map(i => i.value);
+            const money = n => '$' + Number(n).toFixed(0);
+
+            function apply(resetPage = true) {
+                if (resetPage) visible = PAGE;
+                const cats = checked('category'), brands = checked('brand'), ratings = checked('rating').map(Number);
+                const minRating = ratings.length ? Math.min(...ratings) : 0;
+                const price = Number($('#price-range').value), inStock = $('#f-instock').checked, sale = $('#f-sale').checked;
+                const wish = Vestiti.Wish.all();
+
+                let list = cards.filter(c => {
+                    const d = c.dataset;
+                    if (cats.length && !cats.includes(d.category)) return false;
+                    if (brands.length && !brands.includes(d.brand)) return false;
+                    if (Number(d.price) > price) return false;
+                    if (Number(d.rating) < minRating) return false;
+                    if (inStock && Number(d.stock) === 0) return false;
+                    if (sale && !c.querySelector('.flag.sale')) return false;
+                    if (state.q && !(d.name + ' ' + d.category + ' ' + d.brand + ' ' + d.tags).toLowerCase().includes(state.q)) return false;
+                    if (state.wishlist && !wish.includes(Number(d.id))) return false;
+                    return true;
+                });
+
+                const sort = $('#sort').value;
+                const disc = c => { const s = c.querySelector('.flag.sale'); return s ? Number(s.textContent.replace(/\D/g, '')) : 0; };
+                const sorters = {
+                    featured: (a, b) => Number(b.dataset.reviews) - Number(a.dataset.reviews),
+                    newest: (a, b) => Number(a.dataset.days) - Number(b.dataset.days),
+                    'price-asc': (a, b) => Number(a.dataset.price) - Number(b.dataset.price),
+                    'price-desc': (a, b) => Number(b.dataset.price) - Number(a.dataset.price),
+                    rating: (a, b) => Number(b.dataset.rating) - Number(a.dataset.rating) || Number(b.dataset.reviews) - Number(a.dataset.reviews),
+                    discount: (a, b) => disc(b) - disc(a)
+                };
+                list.sort(sorters[sort] || sorters.featured);
+                list.forEach(c => grid.appendChild(c));
+
+                cards.forEach(c => c.hidden = true);
+                list.forEach((c, i) => c.hidden = i >= visible);
+
+                $('#result-count').textContent = list.length + (list.length === 1 ? ' product' : ' products');
+                $('#empty').hidden = list.length > 0;
+                grid.hidden = list.length === 0;
+                const shown = Math.min(visible, list.length);
+                $('#load-more').hidden = list.length <= PAGE;
+                $('#progress-bar').style.width = (list.length ? shown / list.length * 100 : 0) + '%';
+                $('#progress-text').textContent = `Showing ${shown} of ${list.length}`;
+                $('#load-more-btn').hidden = shown >= list.length;
+                $('#empty-msg').textContent = state.wishlist ? 'Your wishlist is empty. Tap the heart on any piece to save it here.' : 'Try loosening your filters or searching for something else.';
+
+                const title = state.wishlist ? 'Your wishlist' : state.q ? `Results for “${state.q}”` : cats.length === 1 ? cats[0] : 'All products';
+                $('#shop-title').textContent = title;
+                $('#crumb-current').textContent = title === 'All products' ? 'Shop' : title;
+
+                const chips = [];
+                cats.forEach(v => chips.push({ label: v, clear: () => $$('input[name=category]').forEach(i => { if (i.value === v) i.checked = false; }) }));
+                brands.forEach(v => chips.push({ label: v, clear: () => $$('input[name=brand]').forEach(i => { if (i.value === v) i.checked = false; }) }));
+                if (price < maxPrice) chips.push({ label: 'Under ' + money(price), clear: () => { $('#price-range').value = maxPrice; $('#price-val').textContent = money(maxPrice); } });
+                if (minRating) chips.push({ label: minRating + '★ & up', clear: () => $$('input[name=rating]').forEach(i => i.checked = false) });
+                if (inStock) chips.push({ label: 'In stock', clear: () => $('#f-instock').checked = false });
+                if (sale) chips.push({ label: 'On sale', clear: () => $('#f-sale').checked = false });
+                if (state.q) chips.push({ label: '“' + state.q + '”', clear: () => state.q = '' });
+                if (state.wishlist) chips.push({ label: 'Wishlist', clear: () => state.wishlist = false });
+
+                const af = $('#active-filters');
+                af.innerHTML = '';
+                chips.forEach(c => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'chip';
+                    b.innerHTML = Vestiti.esc(c.label) + ' <i class="fa-solid fa-xmark" style="font-size:10px"></i>';
+                    b.onclick = () => { c.clear(); apply(); };
+                    af.appendChild(b);
+                });
+            }
+
+            function clearAll() {
+                $$('.filters input[type=checkbox]').forEach(i => i.checked = false);
+                $('#price-range').value = maxPrice;
+                $('#price-val').textContent = money(maxPrice);
+                state.q = '';
+                state.wishlist = false;
+                apply();
+                history.replaceState(null, '', location.pathname);
+            }
+
+            $$('.filters input').forEach(i => i.addEventListener('input', () => {
+                if (i.id === 'price-range') $('#price-val').textContent = money(i.value);
+                apply();
+            }));
+            $('#sort').addEventListener('change', () => apply());
+            $('#clear-filters').addEventListener('click', clearAll);
+            $('#empty-clear').addEventListener('click', clearAll);
+            $('#load-more-btn').addEventListener('click', () => { visible += PAGE; apply(false); });
+            document.addEventListener('vestiti:change', () => { if (state.wishlist) apply(false); });
+
+            // Mobile filter drawer
+            const f = $('#filters'), s = $('#filters-scrim');
+            const toggle = o => { f.classList.toggle('open', o); s.classList.toggle('open', o); document.body.style.overflow = o ? 'hidden' : ''; };
+            $('#filters-open').addEventListener('click', () => toggle(true));
+            $('#filters-apply').addEventListener('click', () => toggle(false));
+            s.addEventListener('click', () => toggle(false));
+
+            apply();
+            Vestiti.updateBadges();
+        })();
+    </script>
+}

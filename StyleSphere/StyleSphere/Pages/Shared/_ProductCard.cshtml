@@ -1,0 +1,56 @@
+@using System.Globalization
+@using StyleSphere.Data
+@model CatalogProduct
+@{
+    var p = Model;
+    var inv = CultureInfo.InvariantCulture;
+}
+<article class="pcard"
+         data-id="@p.Id"
+         data-category="@p.Category"
+         data-brand="@p.Brand"
+         data-price="@p.Price.ToString(inv)"
+         data-rating="@p.Rating.ToString("0.0", inv)"
+         data-stock="@p.Stock"
+         data-days="@p.DaysOld"
+         data-reviews="@p.Reviews"
+         data-name="@p.Name.ToLowerInvariant()"
+         data-tags="@string.Join(' ', p.Tags)">
+    <div class="pcard-media">
+        <a class="pcard-link" asp-page="/details" asp-route-id="@p.Id" aria-label="@p.Name">
+            <img src="@Catalog.Img(p.Images[0], 600)" alt="@p.Name" loading="lazy" />
+            @if (p.Images.Length > 1)
+            {
+                <img class="alt" src="@Catalog.Img(p.Images[1], 600)" alt="" loading="lazy" />
+            }
+        </a>
+        <div class="pcard-flags">
+            @if (p.DiscountPercent > 0) { <span class="flag sale">-@p.DiscountPercent%</span> }
+            @if (p.Stock == 0) { <span class="flag out">Sold out</span> }
+            else if (p.DaysOld <= 14) { <span class="flag">New</span> }
+        </div>
+        <button type="button" class="wish-btn" data-wish="@p.Id" aria-label="Add @p.Name to wishlist" aria-pressed="false">
+            <i class="fa-regular fa-heart"></i>
+        </button>
+    </div>
+    <div class="pcard-body">
+        <span class="pcard-cat">@p.Category</span>
+        <h3 class="pcard-title"><a asp-page="/details" asp-route-id="@p.Id">@p.Name</a></h3>
+        <div class="pcard-foot">
+            <span class="price">$@p.Price.ToString("0.##", inv)@if (p.OldPrice != null) { <s>$@p.OldPrice.Value.ToString("0.##", inv)</s> }</span>
+            <span class="rating"><span class="stars" aria-hidden="true">@(new string('★', (int)Math.Round(p.Rating)))@(new string('☆', 5 - (int)Math.Round(p.Rating)))</span><span class="sr-only">Rated @p.Rating.ToString("0.0", inv) out of 5</span> @p.Rating.ToString("0.0", inv)</span>
+        </div>
+        @if (p.Colors.Length > 1)
+        {
+            <div class="swatches" aria-hidden="true">@foreach (var c in p.Colors) { <span class="swatch" style="background:@c.Split('|')[1]" title="@c.Split('|')[0]"></span> }</div>
+        }
+        <div class="pcard-actions">
+            <button type="button" class="pcard-add" data-add="@p.Id" @(p.Stock == 0 ? "disabled" : "")>
+                @if (p.Stock == 0) { <text>Sold out</text> } else { <i class="fa-solid fa-bag-shopping"></i><text> Add to bag</text> }
+            </button>
+            <button type="button" class="pcard-qv" data-quick="@p.Id" aria-label="Quick view @p.Name" title="Quick view">
+                <i class="fa-regular fa-eye"></i>
+            </button>
+        </div>
+    </div>
+</article>

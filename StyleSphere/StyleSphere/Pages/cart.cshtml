@@ -1,0 +1,128 @@
+﻿@page
+@model StyleSphere.Pages.cartModel
+@{
+    ViewData["Title"] = "Shopping bag";
+    Layout = "_CustomerLayout";
+}
+
+<div class="container">
+    <div class="page-head">
+        <div class="crumbs"><a href="/">Home</a><span class="sep">/</span><span>Bag</span></div>
+        <h1>Your bag <span id="bag-count" style="font-size:.4em;color:var(--muted);font-family:var(--font-body)"></span></h1>
+    </div>
+
+    <div class="cart-layout" id="cart-content" hidden>
+        <div>
+            <div class="cart-head"><span>Product</span><span>Quantity</span><span style="text-align:right">Total</span><span></span></div>
+            <div id="cart-items"></div>
+            <div style="margin-top:28px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <a asp-page="/Products" class="link-arrow"><i class="fa-solid fa-arrow-left" style="font-size:11px"></i> Continue shopping</a>
+                <button type="button" class="link-arrow" id="clear-cart" style="color:var(--muted)">Clear bag</button>
+            </div>
+        </div>
+
+        <aside class="summary" aria-label="Order summary">
+            <h3>Order summary</h3>
+            <div class="ship-meter" id="ship-meter"></div>
+            <div class="sum-row"><span>Subtotal</span><span id="s-sub">$0.00</span></div>
+            <div class="sum-row" id="s-disc-row" hidden>
+                <span>Discount <small id="s-code"></small> <button type="button" id="remove-promo" style="background:none;border:0;color:var(--sale);font-size:12px;text-decoration:underline;padding:0 4px">Remove</button></span>
+                <span id="s-disc" style="color:var(--ok)">−$0.00</span>
+            </div>
+            <div class="sum-row"><span>Shipping</span><span id="s-ship">—</span></div>
+            <div class="sum-row total"><span>Total</span><span id="s-total">$0.00</span></div>
+            <form class="promo-form" id="promo-form">
+                <label class="sr-only" for="promo-input">Promo code</label>
+                <input id="promo-input" placeholder="Promo code" autocomplete="off" />
+                <button class="btn btn-outline btn-sm" type="submit">Apply</button>
+            </form>
+            <small id="promo-msg" style="color:var(--muted)">Try <b>VESTITI10</b> (10% off) or <b>WELCOME15</b> (15% off).</small>
+            <a asp-page="/checkout" class="btn btn-block" style="margin-top:22px">Proceed to checkout <i class="fa-solid fa-arrow-right"></i></a>
+            <p class="sum-note"><i class="fa-solid fa-lock"></i> Secure, encrypted checkout</p>
+        </aside>
+    </div>
+
+    <div class="empty" id="cart-empty" hidden>
+        <i class="fa-solid fa-bag-shopping"></i>
+        <h2>Your bag is empty</h2>
+        <p>Looks like you haven’t added anything yet. Let’s fix that.</p>
+        <a asp-page="/Products" class="btn">Start shopping</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const V = Vestiti, $ = s => document.querySelector(s);
+
+            function row(it) {
+                return `<div class="cart-row" data-key="${V.esc(it.key)}">
+                  <div class="cart-prod">
+                    <a href="/details/${it.id}"><img src="${V.img(it.image, 300)}" alt="${V.esc(it.name)}"></a>
+                    <div>
+                      <h3><a href="/details/${it.id}">${V.esc(it.name)}</a></h3>
+                      <small>${[it.color, it.size].filter(Boolean).map(V.esc).join(' · ') || 'One size'}</small>
+                      <div class="unit">${V.money(it.price)}</div>
+                    </div>
+                  </div>
+                  <div class="qty" role="group" aria-label="Quantity for ${V.esc(it.name)}">
+                    <button type="button" data-act="dec" aria-label="Decrease">−</button>
+                    <span>${it.qty}</span>
+                    <button type="button" data-act="inc" aria-label="Increase">+</button>
+                  </div>
+                  <div class="cart-total">${V.money(it.price * it.qty)}</div>
+                  <button type="button" class="remove-btn" data-act="rm" aria-label="Remove ${V.esc(it.name)}"><i class="fa-regular fa-trash-can"></i></button>
+                </div>`;
+            }
+
+            function render() {
+                const items = V.Cart.all();
+                $('#cart-empty').hidden = items.length > 0;
+                $('#cart-content').hidden = items.length === 0;
+                $('#bag-count').textContent = items.length ? '(' + V.Cart.count() + ')' : '';
+                if (!items.length) return;
+                $('#cart-items').innerHTML = items.map(row).join('');
+                const t = V.totals('standard');
+                $('#s-sub').textContent = V.money(t.subtotal);
+                $('#s-disc-row').hidden = !t.discount;
+                $('#s-disc').textContent = '−' + V.money(t.discount);
+                $('#s-code').textContent = t.code ? '(' + t.code + ')' : '';
+                $('#s-ship').innerHTML = t.shipping === 0 ? '<span class="free">Free</span>' : V.money(t.shipping);
+                $('#s-total').textContent = V.money(t.total);
+                const left = V.FREE_SHIP - t.subtotal;
+                $('#ship-meter').innerHTML = left > 0
+                    ? `You’re <b>${V.money(left)}</b> away from free shipping<div class="bar"><i style="width:${Math.min(100, t.subtotal / V.FREE_SHIP * 100)}%"></i></div>`
+                    : `<i class="fa-solid fa-circle-check" style="color:var(--ok)"></i> You’ve unlocked <b>free shipping</b><div class="bar"><i style="width:100%"></i></div>`;
+            }
+
+            $('#cart-items').addEventListener('click', e => {
+                const b = e.target.closest('[data-act]');
+                if (!b) return;
+                const key = b.closest('.cart-row').dataset.key;
+                const it = V.Cart.all().find(i => i.key === key);
+                if (!it) return;
+                if (b.dataset.act === 'inc') {
+                    const p = V.byId(it.id);
+                    if (p && it.qty >= p.stock) { V.toast('That’s all we have in stock.', { type: 'error' }); return; }
+                    V.Cart.setQty(key, it.qty + 1);
+                }
+                if (b.dataset.act === 'dec') V.Cart.setQty(key, it.qty - 1);
+                if (b.dataset.act === 'rm') { V.Cart.remove(key); V.toast(it.name + ' removed from your bag'); }
+            });
+            $('#clear-cart').addEventListener('click', () => { V.Cart.clear(); V.toast('Your bag has been cleared'); });
+            $('#remove-promo').addEventListener('click', () => { V.Promo.clear(); V.toast('Promo code removed'); });
+            $('#promo-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const v = $('#promo-input').value;
+                if (V.Promo.apply(v)) {
+                    V.toast('Promo code applied!');
+                    $('#promo-input').value = '';
+                } else {
+                    V.toast('Invalid code — try VESTITI10 or WELCOME15.', { type: 'error' });
+                }
+            });
+            document.addEventListener('vestiti:change', render);
+            render();
+        })();
+    </script>
+}

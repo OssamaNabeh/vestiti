@@ -1,0 +1,238 @@
+@page
+@model StyleSphere.Pages.checkoutModel
+@{
+    ViewData["Title"] = "Checkout";
+    Layout = "_CustomerLayout";
+}
+
+<div class="container">
+    <div class="page-head" id="co-head">
+        <div class="steps"><a asp-page="/cart">Bag</a><i class="fa-solid fa-chevron-right"></i><b>Checkout</b><i class="fa-solid fa-chevron-right"></i><span>Confirmation</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px">
+            <h1>Checkout</h1>
+            <button type="button" class="chip" id="fill-demo"><i class="fa-solid fa-wand-magic-sparkles"></i> Autofill demo details</button>
+        </div>
+    </div>
+
+    <form class="checkout-layout" id="checkout-form" novalidate hidden>
+        <div>
+            <section class="co-section">
+                <h2><span class="n">1</span> Contact</h2>
+                <div class="form-grid">
+                    <div class="field full"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required /><span class="err">Enter a valid email address.</span></div>
+                    <div class="field"><label for="first">First name</label><input id="first" type="text" autocomplete="given-name" value="@Model.UserName" placeholder="Osama" required /><span class="err">Required.</span></div>
+                    <div class="field"><label for="last">Last name</label><input id="last" type="text" autocomplete="family-name" placeholder="Ahmed" required /><span class="err">Required.</span></div>
+                    <div class="field full"><label for="phone">Phone</label><input id="phone" type="tel" autocomplete="tel" placeholder="+20 100 123 4567" required /><span class="err">Enter a valid phone number (at least 8 digits).</span></div>
+                </div>
+            </section>
+
+            <section class="co-section">
+                <h2><span class="n">2</span> Shipping address</h2>
+                <div class="form-grid">
+                    <div class="field full"><label for="address">Address</label><input id="address" type="text" autocomplete="street-address" placeholder="14 Zamalek St, Apt 5" required /><span class="err">Enter your street address.</span></div>
+                    <div class="field"><label for="city">City</label><input id="city" type="text" autocomplete="address-level2" placeholder="Cairo" required /><span class="err">Required.</span></div>
+                    <div class="field"><label for="zip">Postal code</label><input id="zip" type="text" autocomplete="postal-code" placeholder="11211" required /><span class="err">At least 3 characters.</span></div>
+                    <div class="field full"><label for="country">Country</label>
+                        <select id="country" autocomplete="country-name" required>
+                            <option value="">Select country</option>
+                            <option selected>Egypt</option>
+                            <option>United Arab Emirates</option>
+                            <option>Saudi Arabia</option>
+                            <option>Italy</option>
+                            <option>United Kingdom</option>
+                            <option>United States</option>
+                            <option>Germany</option>
+                            <option>France</option>
+                        </select>
+                        <span class="err">Please choose a country.</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="co-section">
+                <h2><span class="n">3</span> Delivery</h2>
+                <div class="option-list">
+                    <label class="option"><input type="radio" name="ship" value="standard" checked /><span class="grow"><b>Standard</b><small>3–5 business days</small></span><span class="opt-price" id="p-standard">$12.00</span></label>
+                    <label class="option"><input type="radio" name="ship" value="express" /><span class="grow"><b>Express</b><small>1–2 business days</small></span><span class="opt-price">$24.00</span></label>
+                    <label class="option"><input type="radio" name="ship" value="pickup" /><span class="grow"><b>Store pickup</b><small>Ready in 24 hours · Milan flagship</small></span><span class="opt-price">Free</span></label>
+                </div>
+            </section>
+
+            <section class="co-section">
+                <h2><span class="n">4</span> Payment</h2>
+                <div class="option-list">
+                    <label class="option"><input type="radio" name="pay" value="card" checked /><span class="grow"><b>Credit / debit card</b><small>Visa, Mastercard, Amex</small></span><i class="fa-regular fa-credit-card"></i></label>
+                    <label class="option"><input type="radio" name="pay" value="paypal" /><span class="grow"><b>PayPal</b><small>Pay securely with your PayPal account</small></span><i class="fa-brands fa-paypal"></i></label>
+                    <label class="option"><input type="radio" name="pay" value="cod" /><span class="grow"><b>Cash on delivery</b><small>Pay when your order arrives</small></span><i class="fa-solid fa-money-bill-wave"></i></label>
+                </div>
+                <div class="card-fields" id="card-fields">
+                    <div class="form-grid">
+                        <div class="field full"><label for="cc-name">Name on card</label><input id="cc-name" type="text" autocomplete="cc-name" placeholder="OSAMA AHMED" /><span class="err">Required.</span></div>
+                        <div class="field full"><label for="cc-num">Card number</label><input id="cc-num" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="4532 1234 5678 9012" maxlength="19" /><span class="err">Enter a 15–16 digit card number.</span></div>
+                        <div class="field"><label for="cc-exp">Expiry</label><input id="cc-exp" type="text" inputmode="numeric" autocomplete="cc-exp" placeholder="08 / 29" maxlength="7" /><span class="err">Use MM / YY.</span></div>
+                        <div class="field"><label for="cc-cvc">CVC</label><input id="cc-cvc" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4" /><span class="err">3–4 digits.</span></div>
+                    </div>
+                    <small style="display:block;margin-top:12px;color:var(--muted)"><i class="fa-solid fa-lock"></i> Demo checkout — no real payment is processed.</small>
+                </div>
+            </section>
+        </div>
+
+        <aside class="summary" aria-label="Order summary">
+            <h3>Order summary</h3>
+            <div id="mini-items"></div>
+            <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+                <div class="sum-row"><span>Subtotal</span><span id="c-sub"></span></div>
+                <div class="sum-row" id="c-disc-row" hidden><span>Discount <small id="c-code"></small></span><span id="c-disc" style="color:var(--ok)"></span></div>
+                <div class="sum-row"><span>Shipping</span><span id="c-ship"></span></div>
+                <div class="sum-row total"><span>Total</span><span id="c-total"></span></div>
+            </div>
+            <button type="submit" class="btn btn-block" id="place-order" style="margin-top:22px"><i class="fa-solid fa-lock"></i> Place order</button>
+            <p class="sum-note">By placing your order you agree to our Terms &amp; Privacy Policy.</p>
+        </aside>
+    </form>
+
+    <div class="empty" id="co-empty" hidden>
+        <i class="fa-solid fa-bag-shopping"></i>
+        <h2>Your bag is empty</h2>
+        <p>Add something to your bag before checking out.</p>
+        <a asp-page="/Products" class="btn">Shop the collection</a>
+    </div>
+
+    <div class="confirm" id="confirm" hidden>
+        <div class="tick"><i class="fa-solid fa-check"></i></div>
+        <h1>Thank you, <span id="conf-name"></span>.</h1>
+        <p style="color:var(--ink-2)">Your order is confirmed. We’ve sent a receipt to <b id="conf-email"></b>.</p>
+        <div class="order-no" id="conf-no"></div>
+        <p style="color:var(--muted);margin-bottom:30px" id="conf-eta"></p>
+        <a asp-page="/Products" class="btn">Continue shopping</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const V = Vestiti, $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+            const form = $('#checkout-form');
+            const method = () => $('input[name=ship]:checked').value;
+
+            function summary() {
+                const items = V.Cart.all();
+                $('#mini-items').innerHTML = items.map(i => `<div class="mini-item"><div class="thumb"><img src="${V.img(i.image, 160)}" alt=""><span class="q">${i.qty}</span></div>
+                    <div><b>${V.esc(i.name)}</b><small>${[i.color, i.size].filter(Boolean).map(V.esc).join(' · ') || 'One size'}</small></div><span class="p">${V.money(i.price * i.qty)}</span></div>`).join('');
+                const t = V.totals(method());
+                $('#c-sub').textContent = V.money(t.subtotal);
+                $('#c-disc-row').hidden = !t.discount;
+                $('#c-disc').textContent = '−' + V.money(t.discount);
+                $('#c-code').textContent = t.code ? '(' + t.code + ')' : '';
+                $('#c-ship').innerHTML = t.shipping === 0 ? '<span class="free">Free</span>' : V.money(t.shipping);
+                $('#c-total').textContent = V.money(t.total);
+                $('#p-standard').textContent = V.Cart.subtotal() >= V.FREE_SHIP ? 'Free' : '$12.00';
+            }
+
+            function init() {
+                if (V.Cart.count() === 0) {
+                    $('#co-empty').hidden = false;
+                    $('#fill-demo').hidden = true;
+                    return;
+                }
+                form.hidden = false;
+                summary();
+            }
+
+            $('#fill-demo').addEventListener('click', () => {
+                if (!$('#email').value) $('#email').value = 'osama@vestiti.com';
+                if (!$('#first').value) $('#first').value = 'Osama';
+                if (!$('#last').value) $('#last').value = 'Ahmed';
+                if (!$('#phone').value) $('#phone').value = '+20 100 555 7890';
+                if (!$('#address').value) $('#address').value = '14 Zamalek Street, Suite 5';
+                if (!$('#city').value) $('#city').value = 'Cairo';
+                if (!$('#zip').value) $('#zip').value = '11211';
+                if (!$('#country').value) $('#country').value = 'Egypt';
+                $('#cc-name').value = 'OSAMA AHMED';
+                $('#cc-num').value = '4532 8910 2345 6789';
+                $('#cc-exp').value = '08 / 29';
+                $('#cc-cvc').value = '412';
+                $$('.field input, .field select').forEach(el => el.classList.remove('invalid'));
+                V.toast('Demo checkout details filled — ready to place order!');
+            });
+
+            $$('input[name=ship]').forEach(r => r.addEventListener('change', summary));
+            $$('input[name=pay]').forEach(r => r.addEventListener('change', () => {
+                $('#card-fields').hidden = $('input[name=pay]:checked').value !== 'card';
+            }));
+
+            $('#cc-num').addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim());
+            $('#cc-exp').addEventListener('input', e => {
+                let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+                if (v.length > 2) v = v.slice(0, 2) + ' / ' + v.slice(2);
+                e.target.value = v;
+            });
+            $('#cc-cvc').addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4));
+
+            const rules = {
+                email: v => /^\S+@@\S+\.\S+$/.test(v.trim()),
+                first: v => v.trim().length > 0,
+                last: v => v.trim().length > 0,
+                phone: v => v.replace(/\D/g, '').length >= 8,
+                address: v => v.trim().length > 3,
+                city: v => v.trim().length > 0,
+                zip: v => v.trim().length >= 3,
+                country: v => v !== ''
+            };
+            const cardRules = {
+                'cc-name': v => v.trim().length > 1,
+                'cc-num': v => v.replace(/\D/g, '').length >= 15,
+                'cc-exp': v => /^(0[1-9]|1[0-2]) \/ \d{2}$/.test(v),
+                'cc-cvc': v => /^\d{3,4}$/.test(v)
+            };
+
+            function validate() {
+                let first = null;
+                const all = Object.assign({}, rules, $('input[name=pay]:checked').value === 'card' ? cardRules : {});
+                Object.entries(all).forEach(([id, ok]) => {
+                    const el = document.getElementById(id), good = ok(el.value);
+                    el.classList.toggle('invalid', !good);
+                    el.setAttribute('aria-invalid', String(!good));
+                    if (!good && !first) first = el;
+                });
+                if (first) {
+                    first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    first.focus({ preventScroll: true });
+                    const lbl = form.querySelector(`label[for="${first.id}"]`)?.textContent || first.id;
+                    V.toast(`Please complete: ${lbl}`, { type: 'error' });
+                }
+                return !first;
+            }
+            $$('.field input, .field select').forEach(el => el.addEventListener('input', () => el.classList.remove('invalid')));
+
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+                if (!validate()) return;
+                const btn = $('#place-order');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing…';
+                const m = method();
+                setTimeout(() => {
+                    const no = 'VST-' + Date.now().toString().slice(-7);
+                    $('#conf-name').textContent = $('#first').value.trim();
+                    $('#conf-email').textContent = $('#email').value.trim();
+                    $('#conf-no').textContent = 'Order ' + no;
+                    $('#conf-eta').textContent = m === 'pickup'
+                        ? 'Your order will be ready for pickup within 24 hours.'
+                        : m === 'express'
+                            ? 'Estimated delivery: 1–2 business days.'
+                            : 'Estimated delivery: 3–5 business days.';
+                    V.Cart.clear();
+                    V.Promo.clear();
+                    form.hidden = true;
+                    $('#co-head').hidden = true;
+                    $('#confirm').hidden = false;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    V.toast('Order placed successfully!');
+                }, 700);
+            });
+
+            init();
+        })();
+    </script>
+}

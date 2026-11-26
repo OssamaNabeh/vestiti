@@ -1,0 +1,296 @@
+﻿@page "{id:int}"
+@using System.Globalization
+@using StyleSphere.Data
+@model StyleSphere.Pages.detailsModel
+@{
+    Layout = "_CustomerLayout";
+    var p = Model.Product;
+    ViewData["Title"] = p?.Name ?? "Product not found";
+    var inv = CultureInfo.InvariantCulture;
+}
+
+@if (p == null)
+{
+    <div class="container">
+        <div class="empty">
+            <i class="fa-regular fa-circle-question"></i>
+            <h2>We couldn’t find that piece</h2>
+            <p>It may have sold out or moved. Browse the collection instead.</p>
+            <a asp-page="/Products" class="btn">Back to shop</a>
+        </div>
+    </div>
+}
+else
+{
+    var stars = (int)Math.Round(p.Rating);
+    var five = Math.Clamp((int)((p.Rating - 3.5) * 52), 30, 88);
+    var four = Math.Clamp((100 - five) * 55 / 100, 6, 40);
+    var three = Math.Clamp((100 - five - four) * 55 / 100, 2, 20);
+    var two = Math.Clamp((100 - five - four - three) / 2, 1, 10);
+    var one = Math.Max(0, 100 - five - four - three - two);
+    var dist = new[] { five, four, three, two, one };
+    var lowStock = p.Stock > 0 && p.Stock <= 10;
+    var defaultSize = p.Sizes.Length > 0 ? (p.Sizes.Contains("M") ? "M" : p.Sizes[0]) : null;
+    var defaultColor = p.Colors.Length > 0 ? p.Colors[0].Split('|')[0] : null;
+
+    <div class="container">
+        <div class="page-head" style="padding-bottom:24px">
+            <div class="crumbs">
+                <a href="/">Home</a><span class="sep">/</span>
+                <a asp-page="/Products">Shop</a><span class="sep">/</span>
+                <a href="/Products?category=@p.Category">@p.Category</a><span class="sep">/</span>
+                <span>@p.Name</span>
+            </div>
+        </div>
+
+        <div class="pdp">
+            <div class="@(p.Images.Length < 2 ? "gallery single" : "gallery")">
+                @if (p.Images.Length >= 2)
+                {
+                    <div class="thumbs" id="thumbs">
+                        @for (var i = 0; i < p.Images.Length; i++)
+                        {
+                            <button type="button" class="@(i == 0 ? "active" : "")" data-src="@Catalog.Img(p.Images[i], 1200)" aria-label="View image @(i + 1)">
+                                <img src="@Catalog.Img(p.Images[i], 200)" alt="" />
+                            </button>
+                        }
+                    </div>
+                }
+                <div class="main-img" id="main-img" title="Click to zoom">
+                    <img id="main-photo" src="@Catalog.Img(p.Images[0], 1200)" alt="@p.Name" fetchpriority="high" />
+                    <div class="pcard-flags" style="top:16px;left:16px">
+                        @if (p.DiscountPercent > 0) { <span class="flag sale">-@p.DiscountPercent%</span> }
+                        @if (p.DaysOld <= 14) { <span class="flag">New</span> }
+                    </div>
+                </div>
+            </div>
+
+            <div class="pdp-info">
+                <div>
+                    <span class="eyebrow">@p.Brand</span>
+                    <h1 style="margin-top:10px">@p.Name</h1>
+                </div>
+                <div class="rating" style="font-size:14px">
+                    <span class="stars" style="font-size:15px">@(new string('★', stars))@(new string('☆', 5 - stars))</span>
+                    <a href="#reviews" style="text-decoration:underline">@p.Rating.ToString("0.0", inv) · @p.Reviews reviews</a>
+                </div>
+                <div class="pdp-price">
+                    <span class="now">$@p.Price.ToString("0.00", inv)</span>
+                    @if (p.OldPrice != null)
+                    {
+                        <s>$@p.OldPrice.Value.ToString("0.00", inv)</s>
+                        <span class="save">Save @p.DiscountPercent%</span>
+                    }
+                </div>
+                <p class="pdp-lead">@p.Description</p>
+
+                @if (p.Colors.Length > 0)
+                {
+                    <div>
+                        <div class="opt-label">Colour <span id="color-name">@defaultColor</span></div>
+                        <div class="color-opts" id="colors">
+                            @for (var i = 0; i < p.Colors.Length; i++)
+                            {
+                                var parts = p.Colors[i].Split('|');
+                                <button type="button" class="color-opt @(i == 0 ? "active" : "")" data-color="@parts[0]" style="background:@parts[1]" aria-label="@parts[0]" title="@parts[0]"></button>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (p.Sizes.Length > 0)
+                {
+                    <div>
+                        <div class="opt-label">Size <span id="size-name">@defaultSize · True to size</span></div>
+                        <div class="size-opts" id="sizes">
+                            @foreach (var s in p.Sizes)
+                            {
+                                <button type="button" class="size-opt @(s == defaultSize ? "active" : "")" data-size="@s">@s</button>
+                            }
+                        </div>
+                        <div class="field-error" id="size-error" role="alert">Please select a size to continue.</div>
+                    </div>
+                }
+
+                <div class="stock-line">
+                    @if (p.Stock == 0) { <span class="dot out"></span><span>Sold out</span> }
+                    else if (lowStock) { <span class="dot low"></span><span>Only <b>@p.Stock</b> left — order soon</span> }
+                    else { <span class="dot"></span><span>In stock — ships in 1–2 business days</span> }
+                </div>
+
+                <div class="buy-row">
+                    <div class="qty" role="group" aria-label="Quantity">
+                        <button type="button" id="qty-minus" aria-label="Decrease quantity">−</button>
+                        <span id="qty-val" aria-live="polite">1</span>
+                        <button type="button" id="qty-plus" aria-label="Increase quantity">+</button>
+                    </div>
+                    <button type="button" class="btn btn-outline" id="add-btn" @(p.Stock == 0 ? "disabled" : "")>@(p.Stock == 0 ? "Sold out" : "Add to bag")</button>
+                    <button type="button" class="btn" id="buy-btn" @(p.Stock == 0 ? "disabled" : "")>Buy now</button>
+                </div>
+                <button type="button" class="btn btn-outline btn-block wish-btn-inline" data-wish="@p.Id" id="pdp-wish">
+                    <i class="fa-regular fa-heart"></i> <span>Save to wishlist</span>
+                </button>
+
+                <div class="perks">
+                    <div class="perk"><i class="fa-solid fa-truck-fast"></i> Free delivery on orders over $150</div>
+                    <div class="perk"><i class="fa-solid fa-rotate-left"></i> Free returns within 30 days</div>
+                    <div class="perk"><i class="fa-solid fa-shield-halved"></i> Secure checkout · 2-year guarantee</div>
+                </div>
+
+                <div class="accordion">
+                    <details open>
+                        <summary>Details &amp; specifications</summary>
+                        <div class="acc-body">
+                            <table class="spec-table">
+                                @foreach (var d in p.Details)
+                                {
+                                    var kv = d.Split('|');
+                                    <tr><td>@kv[0]</td><td>@kv[1]</td></tr>
+                                }
+                            </table>
+                        </div>
+                    </details>
+                    <details>
+                        <summary>Shipping &amp; returns</summary>
+                        <div class="acc-body">Standard delivery takes 3–5 business days; express 1–2 days. Free standard shipping over $150. Returns are free within 30 days — items must be unworn with tags attached.</div>
+                    </details>
+                    <details>
+                        <summary>Care</summary>
+                        <div class="acc-body">Follow the care label. For longevity, wash cold, avoid tumble drying, and store on a wide hanger or folded flat.</div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="section alt" id="reviews">
+        <div class="container">
+            <div class="section-head"><div><span class="eyebrow">Customer reviews</span><h2>What people are saying</h2></div></div>
+            <div class="reviews-wrap">
+                <div class="rev-summary">
+                    <div class="big">@p.Rating.ToString("0.0", inv)</div>
+                    <div class="stars" style="font-size:18px;margin:8px 0">@(new string('★', stars))@(new string('☆', 5 - stars))</div>
+                    <small style="color:var(--muted)">Based on @p.Reviews reviews</small>
+                    @for (var i = 0; i < 5; i++)
+                    {
+                        <div class="bar-row"><span>@(5 - i)★</span><div class="bar"><i style="width:@dist[i]%"></i></div><span>@dist[i]%</span></div>
+                    }
+                </div>
+                <div>
+                    @foreach (var r in Model.Reviews)
+                    {
+                        <article class="review">
+                            <div class="review-head">
+                                <span><span class="stars">@(new string('★', r.Stars))@(new string('☆', 5 - r.Stars))</span> &nbsp;<b style="color:var(--ink)">@r.Author</b> <span class="verified"><i class="fa-solid fa-circle-check"></i> Verified buyer</span></span>
+                                <span>@r.Date</span>
+                            </div>
+                            <h4>@r.Title</h4>
+                            <p>@r.Body</p>
+                            <small style="color:var(--muted)">Size purchased: @r.Size</small>
+                        </article>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="section-head"><div><span class="eyebrow">Complete the look</span><h2>You may also like</h2></div></div>
+            <div class="product-grid">
+                @foreach (var r in Model.Related)
+                {
+                    <partial name="_ProductCard" model="r" />
+                }
+            </div>
+        </div>
+    </section>
+
+    <div class="sticky-buy" id="sticky-buy">
+        <div class="container" style="display:flex;gap:16px;align-items:center;justify-content:space-between">
+            <div><b style="display:block;font-size:14px">@p.Name</b><span class="price">$@p.Price.ToString("0.##", inv)</span></div>
+            <button type="button" class="btn btn-sm" id="sticky-add" @(p.Stock == 0 ? "disabled" : "")>@(p.Stock == 0 ? "Sold out" : "Add to bag")</button>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if (p != null)
+    {
+        var defaultSizeJs = p.Sizes.Length > 0 ? "'" + (p.Sizes.Contains("M") ? "M" : p.Sizes[0]).Replace("'", "\\'") + "'" : "null";
+        var defaultColorJs = p.Colors.Length > 0 ? "'" + p.Colors[0].Split('|')[0].Replace("'", "\\'") + "'" : "null";
+        <script>
+            (function () {
+                const id = @p.Id, stock = @p.Stock, needsSize = @(p.Sizes.Length > 0 ? "true" : "false");
+                const $ = (s, r = document) => r.querySelector(s);
+                const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+                let size = @Html.Raw(defaultSizeJs), color = @Html.Raw(defaultColorJs), qty = 1;
+
+                // Gallery thumbnails & zoom
+                $$('#thumbs button').forEach(b => b.addEventListener('click', () => {
+                    $('#main-photo').src = b.dataset.src;
+                    $$('#thumbs button').forEach(x => x.classList.toggle('active', x === b));
+                }));
+                const mi = $('#main-img'), ph = $('#main-photo');
+                mi.addEventListener('click', () => mi.classList.toggle('zoom'));
+                mi.addEventListener('mousemove', e => {
+                    if (!mi.classList.contains('zoom')) return;
+                    const r = mi.getBoundingClientRect();
+                    ph.style.transformOrigin = ((e.clientX - r.left) / r.width * 100) + '% ' + ((e.clientY - r.top) / r.height * 100) + '%';
+                });
+                mi.addEventListener('mouseleave', () => mi.classList.remove('zoom'));
+
+                // Colour & size options
+                $$('#colors .color-opt').forEach(b => b.addEventListener('click', () => {
+                    color = b.dataset.color;
+                    $('#color-name').textContent = color;
+                    $$('#colors .color-opt').forEach(x => x.classList.toggle('active', x === b));
+                }));
+                $$('#sizes .size-opt').forEach(b => b.addEventListener('click', () => {
+                    size = b.dataset.size;
+                    const sn = $('#size-name');
+                    if (sn) sn.textContent = size + ' · True to size';
+                    $$('#sizes .size-opt').forEach(x => x.classList.toggle('active', x === b));
+                    $('#size-error')?.classList.remove('show');
+                }));
+
+                // Quantity
+                const max = Math.max(1, Math.min(stock, 10));
+                const setQty = n => { qty = Math.max(1, Math.min(max, n)); $('#qty-val').textContent = qty; };
+                $('#qty-minus').addEventListener('click', () => setQty(qty - 1));
+                $('#qty-plus').addEventListener('click', () => {
+                    if (qty >= max) Vestiti.toast('Maximum available quantity selected.', { type: 'error' });
+                    else setQty(qty + 1);
+                });
+
+                function add(goCheckout) {
+                    if (stock <= 0) { Vestiti.toast('This piece is sold out.', { type: 'error' }); return; }
+                    if (needsSize && !size) {
+                        $('#size-error')?.classList.add('show');
+                        Vestiti.toast('Please select a size first.', { type: 'error' });
+                        return;
+                    }
+                    Vestiti.Cart.add(id, { size, color, qty });
+                    if (goCheckout) { window.location.href = '/checkout'; return; }
+                    Vestiti.toast('Added to your bag', { href: '/cart', linkText: 'View bag' });
+                }
+                $('#add-btn').addEventListener('click', () => add(false));
+                $('#buy-btn').addEventListener('click', () => add(true));
+                $('#sticky-add').addEventListener('click', () => add(false));
+
+                const wl = $('#pdp-wish');
+                const syncWish = () => {
+                    const on = Vestiti.Wish.has(id);
+                    wl.querySelector('i').className = on ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+                    wl.querySelector('span').textContent = on ? 'Saved to wishlist' : 'Save to wishlist';
+                };
+                document.addEventListener('vestiti:change', syncWish);
+                syncWish();
+
+                const sb = $('#sticky-buy'), anchor = $('#buy-btn');
+                if ('IntersectionObserver' in window && sb && anchor) {
+                    new IntersectionObserver(([e]) => sb.classList.toggle('show', !e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 }).observe(anchor);
+                }
+            })();
+        </script>
+    }
+}

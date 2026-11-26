@@ -1,0 +1,19 @@
+﻿@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Something went wrong";
+    Layout = "_CustomerLayout";
+}
+
+<div class="container">
+    <div class="empty">
+        <i class="fa-regular fa-compass"></i>
+        <h2>Something went wrong</h2>
+        <p>We encountered an unexpected issue while loading this page.</p>
+        @if (Model.ShowRequestId)
+        {
+            <p style="font-size:12px">Request ID: <code>@Model.RequestId</code></p>
+        }
+        <a asp-page="/Index" class="btn">Back to Vestiti</a>
+    </div>
+</div>

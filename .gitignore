@@ -1,0 +1,22 @@
+## Ignore Visual Studio & .NET build artifacts
+.vs/
+.vscode/
+.cursor/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+## SQLite temporary WAL/SHM files
+*.db-shm
+*.db-wal
+
+## OS files
+.DS_Store
+Thumbs.db

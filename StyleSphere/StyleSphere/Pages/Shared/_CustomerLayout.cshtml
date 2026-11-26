@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Vestiti — considered clothing, footwear and accessories. Free shipping over $150." />
+    <meta name="theme-color" content="#faf8f5" />
+    <title>@ViewData["Title"] — Vestiti</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/vestiti.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @{
+        var userId = Context.Session.GetString("UserId");
+        var userName = Context.Session.GetString("UserName");
+        var userRole = Context.Session.GetString("UserRole");
+        var path = (Context.Request.Path.Value ?? "/").ToLowerInvariant();
+        var activeCat = Context.Request.Query["category"].ToString();
+        var isShop = path.StartsWith("/products");
+    }
+    <a href="#main" class="skip-link">Skip to content</a>
+
+    <div class="announce" role="region" aria-label="Announcements">
+        <div class="announce-track">
+            <div class="announce-item">Free shipping on orders over $150</div>
+            <div class="announce-item">New season is in — <a asp-page="/Products" asp-route-sort="newest">Shop new arrivals</a></div>
+            <div class="announce-item">Extended returns — 30 days, no questions</div>
+        </div>
+    </div>
+
+    <header class="site-header">
+        <div class="container nav-inner">
+            <nav class="nav-links" aria-label="Primary">
+                <a href="/Products" class="@(isShop && string.IsNullOrEmpty(activeCat) ? "active" : "")">Shop</a>
+                <a href="/Products?category=Women" class="@(activeCat == "Women" ? "active" : "")">Women</a>
+                <a href="/Products?category=Men" class="@(activeCat == "Men" ? "active" : "")">Men</a>
+                <a href="/Products?category=Shoes" class="@(activeCat == "Shoes" ? "active" : "")">Shoes</a>
+                <a href="/Products?category=Accessories" class="@(activeCat == "Accessories" ? "active" : "")">Accessories</a>
+            </nav>
+            <button type="button" class="icon-btn menu-toggle" id="menu-open" aria-label="Open menu"><i class="fa-solid fa-bars-staggered"></i></button>
+            <a href="/" class="brand" aria-label="Vestiti home">Vestiti<span>.</span></a>
+            <div class="nav-actions">
+                <button type="button" class="icon-btn" data-open-search aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <div class="account-menu" id="account-menu">
+                    <button type="button" class="icon-btn" id="account-btn" aria-label="Account" aria-haspopup="true" aria-expanded="false"><i class="fa-regular fa-user"></i></button>
+                    <div class="account-dropdown" role="menu">
+                        @if (userId != null)
+                        {
+                            <div class="who">Signed in as <b>@userName</b></div>
+                            @if (userRole == "Admin")
+                            {
+                                <a asp-page="/Admin/Index"><i class="fa-solid fa-gear"></i> Admin dashboard</a>
+                            }
+                            <a asp-page="/Logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</a>
+                        }
+                        else
+                        {
+                            <a asp-page="/login"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in</a>
+                            <a asp-page="/Register"><i class="fa-regular fa-user"></i> Create account</a>
+                        }
+                    </div>
+                </div>
+                <a class="icon-btn" href="/Products?wishlist=1" aria-label="Wishlist"><i class="fa-regular fa-heart"></i><span class="badge" id="wish-count" hidden>0</span></a>
+                <a class="icon-btn" asp-page="/cart" aria-label="Shopping bag"><i class="fa-solid fa-bag-shopping"></i><span class="badge" id="cart-count" hidden>0</span></a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile menu -->
+    <div class="mobile-nav" id="mobile-nav" aria-hidden="true">
+        <div class="scrim" data-close-nav></div>
+        <div class="panel">
+            <div class="panel-head">
+                <a href="/" class="brand" style="font-size:26px">Vestiti<span>.</span></a>
+                <button type="button" class="icon-btn" data-close-nav aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <a href="/Products">Shop all</a>
+            <a href="/Products?category=Women">Women</a>
+            <a href="/Products?category=Men">Men</a>
+            <a href="/Products?category=Shoes">Shoes</a>
+            <a href="/Products?category=Accessories">Accessories</a>
+            <a href="/Products?wishlist=1">Wishlist</a>
+            <a asp-page="/cart">Shopping bag</a>
+            @if (userId == null)
+            {
+                <a asp-page="/login">Sign in</a>
+                <a asp-page="/Register">Create account</a>
+            }
+            else
+            {
+                @if (userRole == "Admin") { <a asp-page="/Admin/Index">Admin dashboard</a> }
+                <a asp-page="/Logout">Sign out (@userName)</a>
+            }
+        </div>
+    </div>
+
+    <!-- Search overlay -->
+    <div class="search-overlay" id="search-overlay" role="dialog" aria-label="Search" aria-hidden="true">
+        <div class="search-sheet">
+            <div class="container">
+                <form id="search-form" class="search-box" role="search">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size:18px"></i>
+                    <input id="search-input" type="search" placeholder="Search coats, sneakers, denim…" autocomplete="off" aria-label="Search products" />
+                    <button type="submit" class="btn btn-sm">Search</button>
+                    <button type="button" class="icon-btn" id="search-close" aria-label="Close search"><i class="fa-solid fa-xmark"></i></button>
+                </form>
+                <div class="search-suggest" id="search-suggest">
+                    <span class="eyebrow">Popular</span>
+                    <button type="button" class="chip" data-q="coat">Coats</button>
+                    <button type="button" class="chip" data-q="dress">Dresses</button>
+                    <button type="button" class="chip" data-q="sneaker">Sneakers</button>
+                    <button type="button" class="chip" data-q="denim">Denim</button>
+                    <button type="button" class="chip" data-q="bag">Bags</button>
+                </div>
+                <div class="search-results" id="search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <main id="main">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="container"><div class="alert alert-success" role="status">@TempData["SuccessMessage"]</div></div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="container"><div class="alert alert-danger" role="alert">@TempData["ErrorMessage"]</div></div>
+        }
+        @RenderBody()
+    </main>
+
+    <!-- Quick view modal -->
+    <div class="modal" id="quick-modal" role="dialog" aria-modal="true" aria-label="Quick view" aria-hidden="true">
+        <div class="scrim" data-close-modal></div>
+        <div class="modal-card">
+            <button type="button" class="icon-btn modal-close" data-close-modal aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            <div id="qv-content" class="qv-grid"></div>
+        </div>
+    </div>
+
+    <section class="newsletter">
+        <div class="container">
+            <div>
+                <span class="eyebrow" style="color:#8f8a80">The Vestiti letter</span>
+                <h2 style="margin-top:12px">Ten percent off,<br><em style="color:#e6d9bf">just for signing up.</em></h2>
+                <p>New arrivals, early access to sales, and the occasional style note. No noise.</p>
+            </div>
+            <div>
+                <form class="nl-form" data-newsletter novalidate>
+                    <label class="sr-only" for="nl-email">Email address</label>
+                    <input id="nl-email" type="email" placeholder="Your email address" autocomplete="email" />
+                    <button type="submit">Subscribe <i class="fa-solid fa-arrow-right"></i></button>
+                </form>
+                <p class="nl-note">By subscribing you agree to our privacy policy. Unsubscribe anytime.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="brand" style="justify-self:start;display:inline-block">Vestiti<span>.</span></a>
+                    <p>Considered clothing, footwear and accessories — designed in Milan, made to be worn for years.</p>
+                    <div class="socials">
+                        <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://tiktok.com" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                        <a href="https://pinterest.com" target="_blank" rel="noopener" aria-label="Pinterest"><i class="fa-brands fa-pinterest-p"></i></a>
+                        <a href="https://x.com" target="_blank" rel="noopener" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                    </div>
+                </div>
+                <div><h4>Shop</h4><ul>
+                    <li><a href="/Products?category=Women">Women</a></li>
+                    <li><a href="/Products?category=Men">Men</a></li>
+                    <li><a href="/Products?category=Shoes">Shoes</a></li>
+                    <li><a href="/Products?category=Accessories">Accessories</a></li>
+                    <li><a href="/Products?sort=newest">New arrivals</a></li></ul></div>
+                <div><h4>Help</h4><ul>
+                    <li><a asp-page="/Privacy">Shipping &amp; delivery</a></li>
+                    <li><a asp-page="/Privacy">Returns &amp; exchanges</a></li>
+                    <li><a asp-page="/Privacy">Size guide</a></li>
+                    <li><a asp-page="/Privacy">Contact us</a></li>
+                    <li><a asp-page="/Privacy">FAQ</a></li></ul></div>
+                <div><h4>Company</h4><ul>
+                    <li><a asp-page="/Products">Collection</a></li>
+                    <li><a asp-page="/Products" asp-route-sale="1">Seasonal sale</a></li>
+                    <li><a asp-page="/Products" asp-route-wishlist="1">Saved wishlist</a></li>
+                    <li><a asp-page="/Privacy" asp-fragment="privacy">Privacy</a></li>
+                    <li><a asp-page="/Privacy">Terms</a></li></ul></div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; @DateTime.Now.Year Vestiti. All rights reserved.</span>
+                <span class="pay-icons" aria-label="Accepted payments"><i class="fa-brands fa-cc-visa"></i><i class="fa-brands fa-cc-mastercard"></i><i class="fa-brands fa-cc-amex"></i><i class="fa-brands fa-cc-paypal"></i><i class="fa-brands fa-apple-pay"></i></span>
+            </div>
+        </div>
+    </footer>
+
+    <script>window.VESTITI = { catalog: @Html.Raw(StyleSphere.Data.Catalog.ToJson()) };</script>
+    <script src="~/js/vestiti.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

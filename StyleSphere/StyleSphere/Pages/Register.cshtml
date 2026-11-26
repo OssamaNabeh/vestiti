@@ -1,0 +1,57 @@
+@page
+@model StyleSphere.Pages.RegisterModel
+@{
+    ViewData["Title"] = "Create account";
+    Layout = "_CustomerLayout";
+}
+
+<div class="auth-wrap">
+    <div class="auth-visual"><img src="@StyleSphere.Data.Catalog.Img("1445205170230-053b83016050", 1200)" alt="" /><blockquote>Join Vestiti for faster checkout and early access to every drop.</blockquote></div>
+    <div class="auth-container">
+        <h1>Create account</h1><p class="sub">It takes less than a minute.</p>
+        <form method="post" id="register-form">
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+            
+            <div class="form-group">
+                <label asp-for="Input.Name">Full Name</label>
+                <input asp-for="Input.Name" type="text" class="form-control" placeholder="Enter your full name" required />
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.Email">Email</label>
+                <input asp-for="Input.Email" type="email" class="form-control" placeholder="Enter your email" required />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.Phone">Phone Number</label>
+                <input asp-for="Input.Phone" type="tel" class="form-control" placeholder="Enter your phone number" />
+                <span asp-validation-for="Input.Phone" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.Password">Password</label>
+                <input asp-for="Input.Password" type="password" class="form-control" placeholder="Create a password" required />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+                <input asp-for="Input.ConfirmPassword" type="password" class="form-control" placeholder="Confirm your password" required />
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn">Create account</button>
+        </form>
+        <div class="auth-switch">
+            Already have an account? <a asp-page="/login">Sign in</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

@@ -1,0 +1,39 @@
+﻿@page
+@model PrivacyModel
+@{
+    ViewData["Title"] = "Privacy & Customer Care";
+    Layout = "_CustomerLayout";
+}
+
+<div class="container">
+    <div class="page-head">
+        <div class="crumbs"><a href="/">Home</a><span class="sep">/</span><span>Privacy &amp; Care</span></div>
+        <h1>Privacy &amp; Customer Care</h1>
+        <p>Clear policies, honest commitments, and straightforward answers.</p>
+    </div>
+
+    <div style="max-width:780px;padding-bottom:96px">
+        <div class="accordion">
+            <details open>
+                <summary>Shipping &amp; delivery</summary>
+                <div class="acc-body">Orders placed before 2:00 PM CET ship the same business day. Standard shipping takes 3–5 business days ($12, or complimentary on orders over $150). Express shipping arrives in 1–2 business days ($24).</div>
+            </details>
+            <details open>
+                <summary>Returns &amp; exchanges</summary>
+                <div class="acc-body">You have 30 days from delivery to return or exchange any unworn item with original tags attached. Return shipping is complimentary on all domestic orders.</div>
+            </details>
+            <details>
+                <summary>Sizing &amp; fit</summary>
+                <div class="acc-body">Vestiti garments are cut true to European standards unless noted otherwise in the product details. If you are between sizes on tailored pieces, we recommend taking the larger size.</div>
+            </details>
+            <details id="privacy">
+                <summary>Privacy policy</summary>
+                <div class="acc-body">We collect only the information needed to fulfill your order, personalize your shopping bag, and communicate order updates. We never sell your personal data to third parties, and you can request deletion of your account data at any time.</div>
+            </details>
+            <details>
+                <summary>Contact us</summary>
+                <div class="acc-body">Client concierge is available Monday through Saturday, 9:00 AM – 7:00 PM CET at <b>concierge@vestiti.com</b>.</div>
+            </details>
+        </div>
+    </div>
+</div>

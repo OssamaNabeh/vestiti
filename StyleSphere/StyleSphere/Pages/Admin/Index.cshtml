@@ -1,0 +1,42 @@
+@page
+@model StyleSphere.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Admin Dashboard</h1>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Users</h5>
+                    <p class="card-text">Manage user accounts and permissions</p>
+                    <a asp-page="/Admin/Users/Index" class="btn btn-primary">Manage Users</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Categories</h5>
+                    <p class="card-text">Manage product categories</p>
+                    <a asp-page="/Admin/Categories/Index" class="btn btn-primary">Manage Categories</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Products</h5>
+                    <p class="card-text">Manage products and inventory</p>
+                    <a asp-page="/Admin/Products/Index" class="btn btn-primary">Manage Products</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
